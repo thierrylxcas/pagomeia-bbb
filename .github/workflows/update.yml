@@ -16,16 +16,21 @@ jobs:
         run: |
           curl -s "https://news.google.com/rss/search?q=BBB+26+OR+%22Big+Brother+Brasil+26%22&hl=pt-BR&gl=BR&ceid=BR:pt-419" > rss.xml
 
-      - name: Converter RSS para JSON
+            - name: Converter RSS para JSON
         run: |
           node <<'EOF'
           const fs = require("fs");
 
           const xml = fs.readFileSync("rss.xml", "utf8");
 
-          const titles = [...xml.matchAll(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g)]
-            .map(m => m[1])
+          // captura QUALQUER <title>...</title>
+          const rawTitles = [...xml.matchAll(/<title>(.*?)<\/title>/g)]
+            .map(m => m[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim());
+
+          // remove título geral do feed
+          const titles = rawTitles
             .filter(t => !t.includes("Google News"))
+            .filter(t => t.length > 20)
             .slice(0, 10);
 
           fs.mkdirSync("data", { recursive: true });
