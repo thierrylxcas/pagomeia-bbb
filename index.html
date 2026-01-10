@@ -68,16 +68,28 @@ body {
 </div>
 
 <script>
-fetch("data/news.json")
-  .then(r => r.json())
-  .then(d => {
-    const el = document.getElementById("news");
-    el.innerHTML = "";
-    d.news.forEach(n => {
-      const s = document.createElement("span");
-      s.textContent = "📰 " + n;
-      el.appendChild(s);
+const newsEl = document.getElementById("news");
+
+// caminho absoluto correto para GitHub Pages
+const DATA_URL = "/pagomeia-bbb/data/news.json";
+
+fetch(DATA_URL)
+  .then(res => {
+    if (!res.ok) throw new Error("Erro ao carregar JSON");
+    return res.json();
+  })
+  .then(data => {
+    newsEl.innerHTML = "";
+    data.news.forEach(n => {
+      const span = document.createElement("span");
+      span.textContent = "📰 " + n;
+      newsEl.appendChild(span);
     });
+  })
+  .catch(err => {
+    console.error(err);
+    newsEl.innerHTML =
+      "<span>📰 Acompanhe tudo do BBB no PagoMeia</span>";
   });
 </script>
 
