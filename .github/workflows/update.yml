@@ -2,7 +2,7 @@ name: Atualizar notícias BBB
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/15 * * * *" # a cada 15 minutos
   workflow_dispatch:
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
         run: |
           curl -s "https://news.google.com/rss/search?q=BBB+26+OR+%22Big+Brother+Brasil+26%22&hl=pt-BR&gl=BR&ceid=BR:pt-419" > rss.xml
 
-      - name: Extrair títulos
+      - name: Converter RSS para JSON
         run: |
           node <<'EOF'
           const fs = require("fs");
@@ -25,26 +25,29 @@ jobs:
 
           const titles = [...xml.matchAll(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g)]
             .map(m => m[1])
-            // remove título do feed
             .filter(t => !t.includes("Google News"))
-            .slice(0, 8);
+            .slice(0, 10);
 
           fs.mkdirSync("data", { recursive: true });
 
           fs.writeFileSync(
             "data/news.json",
             JSON.stringify(
-              { source: "Google News", updated: new Date().toISOString(), news: titles },
+              {
+                source: "Google News",
+                updated: new Date().toISOString(),
+                news: titles
+              },
               null,
               2
             )
           );
           EOF
 
-      - name: Commit
+      - name: Commit alterações
         run: |
           git config user.name "pagomeia-bot"
           git config user.email "bot@pagomeia"
           git add data/news.json
-          git commit -m "Atualiza notícias BBB (Google News)" || exit 0
+          git commit -m "Atualiza notícias BBB automaticamente" || exit 0
           git push
