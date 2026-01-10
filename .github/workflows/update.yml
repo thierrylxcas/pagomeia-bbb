@@ -1,37 +1,47 @@
 name: Atualizar notícias BBB
 
 on:
-  schedule:
-    - cron: "*/15 * * * *" # a cada 15 minutos
   workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *" # a cada 30 minutos
 
 jobs:
-  update:
+  update-news:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
 
-      - name: Baixar RSS Google News
+      - name: Baixar RSS do Google News (BBB)
         run: |
-          curl -s "https://news.google.com/rss/search?q=BBB+26+OR+%22Big+Brother+Brasil+26%22&hl=pt-BR&gl=BR&ceid=BR:pt-419" > rss.xml
+          curl -L "https://news.google.com/rss/search?q=BBB+26+OR+%22Big+Brother+Brasil+26%22&hl=pt-BR&gl=BR&ceid=BR:pt-419" -o rss.xml
 
-            - name: Converter RSS para JSON
+      - name: Converter RSS para JSON
         run: |
           node <<'EOF'
           const fs = require("fs");
 
           const xml = fs.readFileSync("rss.xml", "utf8");
 
-          // captura QUALQUER <title>...</title>
+          // Captura TODOS os <title>, com ou sem CDATA
           const rawTitles = [...xml.matchAll(/<title>(.*?)<\/title>/g)]
-            .map(m => m[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim());
+            .map(m =>
+              m[1]
+                .replace(/<!\[CDATA\[|\]\]>/g, "")
+                .replace(/&amp;/g, "&")
+                .replace(/&quot;/g, '"')
+                .replace(/&apos;/g, "'")
+                .replace(/&lt;/g, "<")
+                .replace(/&gt;/g, ">")
+                .trim()
+            );
 
-          // remove título geral do feed
+          // Remove título geral do feed e títulos curtos
           const titles = rawTitles
-            .filter(t => !t.includes("Google News"))
-            .filter(t => t.length > 20)
-            .slice(0, 10);
+            .filter(t => !t.toLowerCase().includes("google news"))
+            .filter(t => t.length > 25)
+            .slice(0, 12);
 
           fs.mkdirSync("data", { recursive: true });
 
@@ -49,10 +59,10 @@ jobs:
           );
           EOF
 
-      - name: Commit alterações
+      - name: Commit e push se houver alterações
         run: |
-          git config user.name "pagomeia-bot"
-          git config user.email "bot@pagomeia"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git add data/news.json
-          git commit -m "Atualiza notícias BBB automaticamente" || exit 0
+          git commit -m "Atualiza notícias do BBB automaticamente" || exit 0
           git push
