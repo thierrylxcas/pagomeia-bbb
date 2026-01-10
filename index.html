@@ -1,107 +1,144 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>PagoMeia News BBB</title>
+<meta charset="UTF-8" />
+<title>BBB 26</title>
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+<style>
     body {
-      background: transparent;
-      overflow: hidden;
-      font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+        font-family: Arial, Helvetica, sans-serif;
     }
 
     .ticker {
-      position: relative;
-      width: 100%;
-      height: 70px;
-      background: linear-gradient(90deg, #000000, #111111);
-      border-top: 2px solid #ffcc00;
-      border-bottom: 2px solid #ffcc00;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        height: 60px;
+        background: linear-gradient(90deg, #000000, #111111);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        font-size: 26px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.7);
     }
 
     .label {
-      background: #ffcc00;
-      color: #000;
-      font-weight: bold;
-      padding: 10px 18px;
-      margin-right: 20px;
-      white-space: nowrap;
-      font-size: 20px;
+        background: #e50914;
+        padding: 0 20px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        font-weight: bold;
+        letter-spacing: 1px;
+        white-space: nowrap;
     }
 
-    .track {
-      display: flex;
-      width: max-content;
-      animation: scroll 60s linear infinite;
+    .marquee {
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
     }
 
-    .news {
-      display: flex;
-      white-space: nowrap;
-      font-size: 22px;
-      color: #fff;
+    .marquee-content {
+        display: inline-block;
+        padding-left: 100%;
+        animation: scroll 120s linear infinite;
     }
 
     .item {
-      margin-right: 60px;
+        display: inline-block;
+        margin-right: 80px;
     }
 
     @keyframes scroll {
-      from {
-        transform: translateX(0);
-      }
-      to {
-        transform: translateX(-50%);
-      }
+        0% {
+            transform: translateX(0);
+        }
+        100% {
+            transform: translateX(-100%);
+        }
     }
-  </style>
+</style>
 </head>
 
 <body>
-  <div class="ticker">
-    <div class="label">PAGOMEIA • BBB 26</div>
-    <div class="track">
-      <div class="news" id="news"></div>
-      <div class="news" id="news-clone"></div>
+
+<div class="ticker">
+    <div class="label">BBB 26 AO VIVO</div>
+    <div class="marquee">
+        <div class="marquee-content" id="news">
+            Carregando notícias do BBB...
+        </div>
     </div>
-  </div>
+</div>
 
-  <script>
-    async function loadNews() {
-      try {
-        const res = await fetch("data/news.json?_=" + Date.now());
-        const data = await res.json();
+<script>
+/* ===============================
+   RSS UTILIZADOS (PODE TROCAR)
+   =============================== */
+const RSS_FEEDS = [
+    "https://news.google.com/rss/search?q=BBB+OR+%22Big+Brother+Brasil%22+OR+Gshow&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+    "https://news.google.com/rss/search?q=Reality+Show+Globo+BBB&hl=pt-BR&gl=BR&ceid=BR:pt-419"
+];
 
-        if (!data.news || data.news.length === 0) {
-          document.getElementById("news").innerHTML =
-            "<span class='item'>Aguardando novas notícias do BBB...</span>";
-          return;
+/* ===============================
+   CONFIGURAÇÕES
+   =============================== */
+const MAX_NEWS = 40;        // Quantidade máxima de manchetes
+const REFRESH_TIME = 600000; // Atualiza a cada 10 minutos
+
+const container = document.getElementById("news");
+
+/* ===============================
+   FUNÇÃO RSS
+   =============================== */
+async function loadRSS() {
+    let allItems = [];
+
+    for (let feed of RSS_FEEDS) {
+        try {
+            const response = await fetch(
+                "https://api.allorigins.win/get?url=" + encodeURIComponent(feed)
+            );
+            const data = await response.json();
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(data.contents, "text/xml");
+            const items = xml.querySelectorAll("item");
+
+            items.forEach(item => {
+                const title = item.querySelector("title")?.textContent;
+                if (title) allItems.push(title);
+            });
+        } catch (e) {
+            console.error("Erro no RSS:", e);
         }
-
-        const content = data.news
-          .map(n => `<span class="item">🔥 ${n}</span>`)
-          .join("");
-
-        document.getElementById("news").innerHTML = content;
-        document.getElementById("news-clone").innerHTML = content;
-      } catch (e) {
-        document.getElementById("news").innerHTML =
-          "<span class='item'>Erro ao carregar notícias</span>";
-      }
     }
 
-    loadNews();
-    setInterval(loadNews, 300000); // atualiza a cada 5 minutos
-  </script>
+    // Remove duplicados
+    allItems = [...new Set(allItems)];
+
+    // Limita quantidade
+    allItems = allItems.slice(0, MAX_NEWS);
+
+    // Monta HTML
+    container.innerHTML = allItems
+        .map(text => `<span class="item">🟡 ${text}</span>`)
+        .join("");
+
+    // Duplica para loop infinito suave
+    container.innerHTML += container.innerHTML;
+}
+
+// Primeira carga
+loadRSS();
+
+// Atualização automática
+setInterval(loadRSS, REFRESH_TIME);
+</script>
+
 </body>
 </html>
