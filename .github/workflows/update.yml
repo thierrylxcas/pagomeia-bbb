@@ -1,0 +1,50 @@
+name: Atualizar notícias BBB
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Baixar RSS Google News
+        run: |
+          curl -s "https://news.google.com/rss/search?q=BBB+26+OR+%22Big+Brother+Brasil+26%22&hl=pt-BR&gl=BR&ceid=BR:pt-419" > rss.xml
+
+      - name: Extrair títulos
+        run: |
+          node <<'EOF'
+          const fs = require("fs");
+
+          const xml = fs.readFileSync("rss.xml", "utf8");
+
+          const titles = [...xml.matchAll(/<title><!\[CDATA\[(.*?)\]\]><\/title>/g)]
+            .map(m => m[1])
+            // remove título do feed
+            .filter(t => !t.includes("Google News"))
+            .slice(0, 8);
+
+          fs.mkdirSync("data", { recursive: true });
+
+          fs.writeFileSync(
+            "data/news.json",
+            JSON.stringify(
+              { source: "Google News", updated: new Date().toISOString(), news: titles },
+              null,
+              2
+            )
+          );
+          EOF
+
+      - name: Commit
+        run: |
+          git config user.name "pagomeia-bot"
+          git config user.email "bot@pagomeia"
+          git add data/news.json
+          git commit -m "Atualiza notícias BBB (Google News)" || exit 0
+          git push
