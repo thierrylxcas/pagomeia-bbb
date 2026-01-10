@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>PagoMeia • BBB</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;900&display=swap');
+
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: Inter, sans-serif;
+}
+
+#ticker {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #0b0b10, #161622);
+  border-top: 3px solid #f5c400;
+}
+
+#label {
+  background: #f5c400;
+  color: #000;
+  padding: 0 22px;
+  font-weight: 900;
+  font-size: 18px;
+}
+
+#content {
+  flex: 1;
+  overflow: hidden;
+}
+
+#news {
+  white-space: nowrap;
+  padding-left: 100%;
+  animation: scroll 40s linear infinite;
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+}
+
+#news span {
+  margin-right: 80px;
+}
+
+@keyframes scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+</style>
+</head>
+
+<body>
+
+<div id="ticker">
+  <div id="label">🗞 BBB AGORA • PAGO MEIA</div>
+  <div id="content">
+    <div id="news">Carregando...</div>
+  </div>
+</div>
+
+<script>
+fetch("data/news.json")
+  .then(r => r.json())
+  .then(d => {
+    const el = document.getElementById("news");
+    el.innerHTML = "";
+    d.news.forEach(n => {
+      const s = document.createElement("span");
+      s.textContent = "📰 " + n;
+      el.appendChild(s);
+    });
+  });
+</script>
+
+</body>
+</html>
