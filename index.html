@@ -126,7 +126,7 @@ async function loadRSS() {
 
     // Monta HTML
     container.innerHTML = allItems
-        .map(text => `<span class="item">🟡 ${text}</span>`)
+        .map(text => `<span class="item">🟣 ${text}</span>`)
         .join("");
 
     // Duplica para loop infinito suave
